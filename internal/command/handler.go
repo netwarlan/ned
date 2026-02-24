@@ -9,6 +9,20 @@ import (
 
 const maxMessageLen = 1500
 
+// respondNow sends an immediate text response (no deferred "thinking..." state).
+func respondNow(s *discordgo.Session, i *discordgo.InteractionCreate, content string, ephemeral bool) {
+	flags := discordgo.MessageFlags(0)
+	if ephemeral {
+		flags = discordgo.MessageFlagsEphemeral
+	}
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{Content: content, Flags: flags},
+	}); err != nil {
+		log.Printf("Error sending response: %v", err)
+	}
+}
+
 // respondDeferred sends an ephemeral "thinking..." response that gives us
 // up to 15 minutes to reply.
 func respondDeferred(s *discordgo.Session, i *discordgo.InteractionCreate, ephemeral bool) {

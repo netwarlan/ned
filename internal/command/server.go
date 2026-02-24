@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -104,47 +105,40 @@ func (h *ServerHandler) HandleStatus(s *discordgo.Session, i *discordgo.Interact
 }
 
 func (h *ServerHandler) handleLifecycle(s *discordgo.Session, i *discordgo.InteractionCreate, sub *discordgo.ApplicationCommandInteractionDataOption, action string) {
-	respondDeferred(s, i, true)
-
 	serviceKey := sub.Options[0].StringValue()
 	srv, ok := h.cfg.Servers[serviceKey]
 	if !ok {
-		followUpError(s, i, fmt.Sprintf("Unknown server: %s", serviceKey), nil)
+		respondNow(s, i, fmt.Sprintf("**Error:** Unknown server: %s", serviceKey), true)
 		return
 	}
 
 	mu := h.serverLock(serviceKey)
 	if !mu.TryLock() {
-		followUpError(s, i, fmt.Sprintf("%s is already being managed by another command", srv.DisplayName), nil)
-		return
-	}
-	defer mu.Unlock()
-
-	result, err := h.executor.Run(context.Background(), srv.Script, action, nil)
-	if err != nil {
-		followUpError(s, i, fmt.Sprintf("Failed to %s %s", action, srv.DisplayName), err)
+		respondNow(s, i, fmt.Sprintf("**Error:** %s is already being managed by another command", srv.DisplayName), true)
 		return
 	}
 
-	output := result.Stdout
-	if output == "" {
-		output = result.Stderr
-	}
-
-	actionPast := map[string]string{"up": "Started", "down": "Stopped", "restart": "Restarted"}
-	verb := actionPast[action]
+	// Fire-and-forget: respond immediately and run the script in the background.
+	// The game server scripts tail logs forever after starting, so waiting
+	// for them to finish would leave Discord stuck on "thinking...".
+	actionVerb := map[string]string{"up": "Starting", "down": "Stopping", "restart": "Restarting"}
+	verb := actionVerb[action]
 	if verb == "" {
 		verb = action
 	}
+	respondNow(s, i, fmt.Sprintf("**%s** %s...", verb, srv.DisplayName), true)
 
-	msg := fmt.Sprintf("**%s** %s", verb, srv.DisplayName)
-	if output != "" {
-		msg += fmt.Sprintf("\n```\n%s\n```", truncate(output, maxMessageLen))
-	}
-	if result.ExitCode != 0 {
-		msg += fmt.Sprintf("\n*Exit code: %d*", result.ExitCode)
-	}
-	followUp(s, i, msg)
+	go func() {
+		defer mu.Unlock()
+		result, err := h.executor.Run(context.Background(), srv.Script, action, nil)
+		if err != nil {
+			log.Printf("[%s] %s %s failed: %v", serviceKey, action, srv.DisplayName, err)
+			return
+		}
+		if result.ExitCode != 0 {
+			log.Printf("[%s] %s %s exited with code %d", serviceKey, action, srv.DisplayName, result.ExitCode)
+		}
+	}()
 }
 
 func (h *ServerHandler) handleStatus(s *discordgo.Session, i *discordgo.InteractionCreate) {
