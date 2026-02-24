@@ -33,7 +33,7 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	b, err := bot.New(cfg)
+	b, err := bot.New(cfg, fmt.Sprintf("%s (commit: %s, built: %s)", version, commit, date))
 	if err != nil {
 		log.Fatalf("Failed to create bot: %v", err)
 	}

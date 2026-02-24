@@ -1,7 +1,9 @@
 package bot
 
 import (
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,6 +17,7 @@ import (
 // Bot is the top-level Discord bot that owns the session and command handlers.
 type Bot struct {
 	cfg     *config.Config
+	version string
 	session *discordgo.Session
 
 	serverHandler  *command.ServerHandler
@@ -27,7 +30,7 @@ type Bot struct {
 }
 
 // New creates a new Bot instance with all dependencies wired up.
-func New(cfg *config.Config) (*Bot, error) {
+func New(cfg *config.Config, version string) (*Bot, error) {
 	session, err := discordgo.New("Bot " + cfg.Discord.Token)
 	if err != nil {
 		return nil, err
@@ -45,6 +48,7 @@ func New(cfg *config.Config) (*Bot, error) {
 
 	return &Bot{
 		cfg:            cfg,
+		version:        version,
 		session:        session,
 		serverHandler:  command.NewServerHandler(cfg, exec, querier),
 		cs2Handler:     command.NewCS2Handler(cfg, matchExec, rconClient),
@@ -109,9 +113,31 @@ func (b *Bot) buildCommand() *discordgo.ApplicationCommand {
 				Name:        "ping",
 				Description: "Check if the bot is alive",
 			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "version",
+				Description: "Show the running bot version",
+			},
 		},
 	}
 }
+
+// formatOptions builds a human-readable string from a command option tree.
+// e.g. "server start service=tf2" or "rcon server=cs2-casual command=status"
+func formatOptions(opt *discordgo.ApplicationCommandInteractionDataOption) string {
+	var parts []string
+	parts = append(parts, opt.Name)
+	for _, child := range opt.Options {
+		if child.Type == discordgo.ApplicationCommandOptionSubCommand ||
+			child.Type == discordgo.ApplicationCommandOptionSubCommandGroup {
+			parts = append(parts, formatOptions(child))
+		} else {
+			parts = append(parts, fmt.Sprintf("%s=%v", child.Name, child.Value))
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
 
 func (b *Bot) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
@@ -122,6 +148,12 @@ func (b *Bot) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	}
 
 	sub := i.ApplicationCommandData().Options[0]
+
+	user := "unknown"
+	if i.Member != nil && i.Member.User != nil {
+		user = i.Member.User.Username
+	}
+	log.Printf("[command] user=%s cmd=/ned %s", user, formatOptions(sub))
 
 	switch sub.Name {
 	case "server":
@@ -142,6 +174,11 @@ func (b *Bot) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{Content: "Pong!"},
+		})
+	case "version":
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: fmt.Sprintf("Ned %s", b.version)},
 		})
 	}
 }
