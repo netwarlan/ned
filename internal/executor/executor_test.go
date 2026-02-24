@@ -104,80 +104,59 @@ exit 42
 
 func TestMatchExecutor_Start_Validation(t *testing.T) {
 	exec := NewShellExecutor(t.TempDir(), "event")
-	m := NewMatchExecutor(exec, "match.sh", 10, 5)
+	m := NewMatchExecutor(exec, "match.sh", 10)
 
-	_, err := m.Start(context.Background(), 0, 0)
+	_, err := m.Start(context.Background(), 0)
 	if err == nil {
-		t.Error("expected error for 0/0 counts")
+		t.Error("expected error for 0 count")
 	}
 
-	_, err = m.Start(context.Background(), 11, 0)
+	_, err = m.Start(context.Background(), 11)
 	if err == nil {
-		t.Error("expected error for pro > max")
-	}
-
-	_, err = m.Start(context.Background(), 0, 6)
-	if err == nil {
-		t.Error("expected error for casual > max")
+		t.Error("expected error for count > max")
 	}
 }
 
-func TestMatchExecutor_Start_EnvVars(t *testing.T) {
+func TestMatchExecutor_Start_Args(t *testing.T) {
 	dir := t.TempDir()
 	script := `#!/bin/bash
-echo "PRO=$PRO_INSTANCE_COUNT"
-echo "CASUAL=$CASUAL_INSTANCE_COUNT"
-echo "CMD=$1"
+echo "ARGS=$@"
 `
-	if err := os.WriteFile(filepath.Join(dir, "match.sh"), []byte(script), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "cs2.sh"), []byte(script), 0755); err != nil {
 		t.Fatal(err)
 	}
 
 	exec := NewShellExecutor(dir, "event")
-	m := NewMatchExecutor(exec, "match.sh", 10, 5)
+	m := NewMatchExecutor(exec, "cs2.sh", 10)
 
-	result, err := m.Start(context.Background(), 3, 2)
+	result, err := m.Start(context.Background(), 3)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(result.Stdout, "PRO=3") {
-		t.Errorf("stdout missing PRO=3: %s", result.Stdout)
-	}
-	if !strings.Contains(result.Stdout, "CASUAL=2") {
-		t.Errorf("stdout missing CASUAL=2: %s", result.Stdout)
-	}
-	if !strings.Contains(result.Stdout, "CMD=up") {
-		t.Errorf("stdout missing CMD=up: %s", result.Stdout)
+	if !strings.Contains(result.Stdout, "ARGS=match up --count 3") {
+		t.Errorf("stdout missing expected args: %s", result.Stdout)
 	}
 }
 
-func TestMatchExecutor_Stop_UsesMaxCounts(t *testing.T) {
+func TestMatchExecutor_Stop_UsesMaxCount(t *testing.T) {
 	dir := t.TempDir()
 	script := `#!/bin/bash
-echo "PRO=$PRO_INSTANCE_COUNT"
-echo "CASUAL=$CASUAL_INSTANCE_COUNT"
-echo "CMD=$1"
+echo "ARGS=$@"
 `
-	if err := os.WriteFile(filepath.Join(dir, "match.sh"), []byte(script), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "cs2.sh"), []byte(script), 0755); err != nil {
 		t.Fatal(err)
 	}
 
 	exec := NewShellExecutor(dir, "event")
-	m := NewMatchExecutor(exec, "match.sh", 10, 5)
+	m := NewMatchExecutor(exec, "cs2.sh", 10)
 
 	result, err := m.Stop(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(result.Stdout, "PRO=10") {
-		t.Errorf("stop should use max pro count: %s", result.Stdout)
-	}
-	if !strings.Contains(result.Stdout, "CASUAL=5") {
-		t.Errorf("stop should use max casual count: %s", result.Stdout)
-	}
-	if !strings.Contains(result.Stdout, "CMD=down") {
-		t.Errorf("stop should pass 'down' command: %s", result.Stdout)
+	if !strings.Contains(result.Stdout, "ARGS=match down --count 10") {
+		t.Errorf("stop should pass correct args: %s", result.Stdout)
 	}
 }

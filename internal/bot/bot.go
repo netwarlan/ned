@@ -41,7 +41,6 @@ func New(cfg *config.Config, version string) (*Bot, error) {
 		exec,
 		cfg.CS2Matches.Script,
 		cfg.CS2Matches.Pro.MaxInstances,
-		cfg.CS2Matches.Casual.MaxInstances,
 	)
 	querier := query.NewA2SQuerier(5 * time.Second)
 	rconClient := rcon.NewGorconClient(10 * time.Second)
@@ -97,33 +96,35 @@ func (b *Bot) Stop() error {
 
 // buildCommand constructs the single /ned command with all subcommands.
 func (b *Bot) buildCommand() *discordgo.ApplicationCommand {
+	opts := []*discordgo.ApplicationCommandOption{}
+	opts = append(opts, b.serverHandler.Subcommands()...)
+	opts = append(opts,
+		b.cs2Handler.MatchSubcommandGroup(),
+		b.rconHandler.Subcommand(),
+		b.playersHandler.Subcommand(),
+		b.welcomeHandler.WelcomeSubcommand(),
+		b.welcomeHandler.TournamentSubcommand(),
+		&discordgo.ApplicationCommandOption{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "help",
+			Description: "Show available commands",
+		},
+		&discordgo.ApplicationCommandOption{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "ping",
+			Description: "Check if the bot is alive",
+		},
+		&discordgo.ApplicationCommandOption{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "version",
+			Description: "Show the running bot version",
+		},
+	)
+
 	return &discordgo.ApplicationCommand{
 		Name:        "ned",
 		Description: "NETWAR Event Discord bot — manage game servers",
-		Options: []*discordgo.ApplicationCommandOption{
-			b.serverHandler.SubcommandGroup(),
-			b.cs2Handler.MatchSubcommandGroup(),
-			b.cs2Handler.MapSubcommand(),
-			b.rconHandler.Subcommand(),
-			b.playersHandler.Subcommand(),
-			b.welcomeHandler.WelcomeSubcommand(),
-			b.welcomeHandler.TournamentSubcommand(),
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "help",
-				Description: "Show available commands",
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "ping",
-				Description: "Check if the bot is alive",
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "version",
-				Description: "Show the running bot version",
-			},
-		},
+		Options:     opts,
 	}
 }
 
@@ -161,12 +162,16 @@ func (b *Bot) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	log.Printf("[command] user=%s cmd=/ned %s", user, formatOptions(sub))
 
 	switch sub.Name {
-	case "server":
-		b.serverHandler.Handle(s, i, sub)
+	case "start":
+		b.serverHandler.HandleStart(s, i, sub)
+	case "stop":
+		b.serverHandler.HandleStop(s, i, sub)
+	case "restart":
+		b.serverHandler.HandleRestart(s, i, sub)
+	case "status":
+		b.serverHandler.HandleStatus(s, i)
 	case "match":
 		b.cs2Handler.HandleMatch(s, i, sub)
-	case "map":
-		b.cs2Handler.HandleMap(s, i, sub)
 	case "rcon":
 		b.rconHandler.Handle(s, i, sub)
 	case "players":
@@ -178,13 +183,13 @@ func (b *Bot) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	case "help":
 		help := "**Ned — NETWAR Event Discord Bot**\n" +
 			"```\n" +
-			"/ned server start <service>     Start a game server\n" +
-			"/ned server stop <service>      Stop a game server\n" +
-			"/ned server restart <service>   Restart a game server\n" +
-			"/ned server status              Show all server statuses\n" +
-			"/ned match start [pro] [casual] Spin up CS2 match instances\n" +
+			"/ned start <service>            Start a game server\n" +
+			"/ned stop <service>             Stop a game server\n" +
+			"/ned restart <service>          Restart a game server\n" +
+			"/ned status                     Show all server statuses\n" +
+			"/ned match start <count>        Spin up CS2 match instances\n" +
 			"/ned match stop                 Tear down all match instances\n" +
-			"/ned map <map> [server]         Change CS2 map via RCON\n" +
+			"/ned match map <map> [server]   Change CS2 map via RCON\n" +
 			"/ned rcon <server> <command>    Send RCON command\n" +
 			"/ned players [server]           Show player counts\n" +
 			"/ned welcome                    Post event welcome message\n" +

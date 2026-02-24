@@ -171,7 +171,7 @@ servers:
     category: "infra"
 
 cs2_matches:
-  script: "cs2/match/match.sh"
+  script: "cs2/cs2.sh"
   rcon_password: "headshot"
   rcon_port: 27015
   query_port: 27015
@@ -180,12 +180,7 @@ cs2_matches:
     max_instances: 10
     ip_base: "10.10.10.140"
     cpu_base: 17
-    display_prefix: "CS2 Match Pro"
-  casual:
-    max_instances: 5
-    ip_base: "10.10.10.150"
-    cpu_base: 27
-    display_prefix: "CS2 Match Casual"
+    display_prefix: "CS2 Match"
 
 welcome:
   connect_base_url: "http://connect.netwar.org"

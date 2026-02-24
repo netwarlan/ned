@@ -35,8 +35,8 @@ func (h *ServerHandler) serverLock(key string) *sync.Mutex {
 	return val.(*sync.Mutex)
 }
 
-// SubcommandGroup returns the "server" subcommand group for the /ned command.
-func (h *ServerHandler) SubcommandGroup() *discordgo.ApplicationCommandOption {
+// Subcommands returns the start, stop, restart, and status subcommands for /ned.
+func (h *ServerHandler) Subcommands() []*discordgo.ApplicationCommandOption {
 	choices := make([]*discordgo.ApplicationCommandOptionChoice, 0, len(h.cfg.Servers))
 	for key, srv := range h.cfg.Servers {
 		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
@@ -56,53 +56,51 @@ func (h *ServerHandler) SubcommandGroup() *discordgo.ApplicationCommandOption {
 		}
 	}
 
-	return &discordgo.ApplicationCommandOption{
-		Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-		Name:        "server",
-		Description: "Manage game servers",
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "start",
-				Description: "Start a game server",
-				Options:     []*discordgo.ApplicationCommandOption{serviceOption()},
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "stop",
-				Description: "Stop a game server",
-				Options:     []*discordgo.ApplicationCommandOption{serviceOption()},
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "restart",
-				Description: "Restart a game server",
-				Options:     []*discordgo.ApplicationCommandOption{serviceOption()},
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "status",
-				Description: "Show status of all game servers",
-			},
+	return []*discordgo.ApplicationCommandOption{
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "start",
+			Description: "Start a game server",
+			Options:     []*discordgo.ApplicationCommandOption{serviceOption()},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "stop",
+			Description: "Stop a game server",
+			Options:     []*discordgo.ApplicationCommandOption{serviceOption()},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "restart",
+			Description: "Restart a game server",
+			Options:     []*discordgo.ApplicationCommandOption{serviceOption()},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "status",
+			Description: "Show status of all game servers",
 		},
 	}
 }
 
-// Handle dispatches /ned server subcommands.
-// sub is the "server" subcommand group option.
-func (h *ServerHandler) Handle(s *discordgo.Session, i *discordgo.InteractionCreate, sub *discordgo.ApplicationCommandInteractionDataOption) {
-	action := sub.Options[0]
+// HandleStart handles /ned start <service>.
+func (h *ServerHandler) HandleStart(s *discordgo.Session, i *discordgo.InteractionCreate, sub *discordgo.ApplicationCommandInteractionDataOption) {
+	h.handleLifecycle(s, i, sub, "up")
+}
 
-	switch action.Name {
-	case "start":
-		h.handleLifecycle(s, i, action, "up")
-	case "stop":
-		h.handleLifecycle(s, i, action, "down")
-	case "restart":
-		h.handleLifecycle(s, i, action, "restart")
-	case "status":
-		h.handleStatus(s, i)
-	}
+// HandleStop handles /ned stop <service>.
+func (h *ServerHandler) HandleStop(s *discordgo.Session, i *discordgo.InteractionCreate, sub *discordgo.ApplicationCommandInteractionDataOption) {
+	h.handleLifecycle(s, i, sub, "down")
+}
+
+// HandleRestart handles /ned restart <service>.
+func (h *ServerHandler) HandleRestart(s *discordgo.Session, i *discordgo.InteractionCreate, sub *discordgo.ApplicationCommandInteractionDataOption) {
+	h.handleLifecycle(s, i, sub, "restart")
+}
+
+// HandleStatus handles /ned status.
+func (h *ServerHandler) HandleStatus(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	h.handleStatus(s, i)
 }
 
 func (h *ServerHandler) handleLifecycle(s *discordgo.Session, i *discordgo.InteractionCreate, sub *discordgo.ApplicationCommandInteractionDataOption, action string) {

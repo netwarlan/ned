@@ -43,14 +43,6 @@ func (h *RCONHandler) Subcommand() *discordgo.ApplicationCommandOption {
 			Value: key,
 		})
 	}
-	for i := 1; i <= h.cfg.CS2Matches.Casual.MaxInstances; i++ {
-		key := fmt.Sprintf("match-casual-%d", i)
-		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
-			Name:  h.cfg.DisplayName(key),
-			Value: key,
-		})
-	}
-
 	sort.Slice(choices, func(i, j int) bool { return choices[i].Name < choices[j].Name })
 
 	return &discordgo.ApplicationCommandOption{

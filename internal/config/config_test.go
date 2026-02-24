@@ -41,12 +41,7 @@ cs2_matches:
     max_instances: 10
     ip_base: "10.10.10.140"
     cpu_base: 17
-    display_prefix: "CS2 Match Pro"
-  casual:
-    max_instances: 5
-    ip_base: "10.10.10.150"
-    cpu_base: 27
-    display_prefix: "CS2 Match Casual"
+    display_prefix: "CS2 Match"
 `
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -185,14 +180,13 @@ func TestAllCS2RCONTargets(t *testing.T) {
 			RCONPassword: "headshot",
 			RCONPort:     27015,
 			Pro:          MatchTierConfig{MaxInstances: 2, IPBase: "10.10.10.140"},
-			Casual:       MatchTierConfig{MaxInstances: 1, IPBase: "10.10.10.150"},
 		},
 	}
 
 	targets := cfg.AllCS2RCONTargets()
-	// 1 static + 2 pro + 1 casual = 4
-	if len(targets) != 4 {
-		t.Errorf("len(targets) = %d, want 4", len(targets))
+	// 1 static + 2 pro = 3
+	if len(targets) != 3 {
+		t.Errorf("len(targets) = %d, want 3", len(targets))
 	}
 	if targets["match-pro-1"].Address != "10.10.10.141:27015" {
 		t.Errorf("match-pro-1 address = %q, want %q", targets["match-pro-1"].Address, "10.10.10.141:27015")
@@ -205,8 +199,7 @@ func TestDisplayName(t *testing.T) {
 			"tf2": {DisplayName: "TF2 Casual"},
 		},
 		CS2Matches: CS2MatchConfig{
-			Pro:    MatchTierConfig{DisplayPrefix: "CS2 Match Pro"},
-			Casual: MatchTierConfig{DisplayPrefix: "CS2 Match Casual"},
+			Pro: MatchTierConfig{DisplayPrefix: "CS2 Match"},
 		},
 	}
 
@@ -215,8 +208,7 @@ func TestDisplayName(t *testing.T) {
 		want string
 	}{
 		{"tf2", "TF2 Casual"},
-		{"match-pro-3", "CS2 Match Pro 3"},
-		{"match-casual-1", "CS2 Match Casual 1"},
+		{"match-pro-3", "CS2 Match 3"},
 		{"unknown", "unknown"},
 	}
 	for _, tt := range tests {

@@ -67,7 +67,6 @@ type CS2MatchConfig struct {
 	QueryPort    int             `yaml:"query_port"`
 	Protocol     string          `yaml:"protocol"`
 	Pro          MatchTierConfig `yaml:"pro"`
-	Casual       MatchTierConfig `yaml:"casual"`
 }
 
 type MatchTierConfig struct {
@@ -201,14 +200,6 @@ func (c *Config) AllCS2RCONTargets() map[string]RCONTarget {
 		}
 	}
 
-	for i := 1; i <= c.CS2Matches.Casual.MaxInstances; i++ {
-		name := fmt.Sprintf("match-casual-%d", i)
-		targets[name] = RCONTarget{
-			Address:  net.JoinHostPort(c.CS2Matches.Casual.InstanceIP(i), strconv.Itoa(c.CS2Matches.RCONPort)),
-			Password: c.CS2Matches.RCONPassword,
-		}
-	}
-
 	return targets
 }
 
@@ -234,10 +225,6 @@ func (c *Config) AllQueryTargets() map[string]string {
 		for i := 1; i <= c.CS2Matches.Pro.MaxInstances; i++ {
 			name := fmt.Sprintf("match-pro-%d", i)
 			targets[name] = net.JoinHostPort(c.CS2Matches.Pro.InstanceIP(i), port)
-		}
-		for i := 1; i <= c.CS2Matches.Casual.MaxInstances; i++ {
-			name := fmt.Sprintf("match-casual-%d", i)
-			targets[name] = net.JoinHostPort(c.CS2Matches.Casual.InstanceIP(i), port)
 		}
 	}
 
@@ -338,10 +325,6 @@ func (c *Config) DisplayName(key string) string {
 	if strings.HasPrefix(key, "match-pro-") {
 		n := strings.TrimPrefix(key, "match-pro-")
 		return c.CS2Matches.Pro.DisplayPrefix + " " + n
-	}
-	if strings.HasPrefix(key, "match-casual-") {
-		n := strings.TrimPrefix(key, "match-casual-")
-		return c.CS2Matches.Casual.DisplayPrefix + " " + n
 	}
 	return key
 }

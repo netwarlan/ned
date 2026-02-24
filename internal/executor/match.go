@@ -7,50 +7,35 @@ import (
 )
 
 // MatchExecutor handles CS2 match server lifecycle.
+// It calls cs2.sh with: match up --count N / match down --count N
 type MatchExecutor struct {
-	executor   *ShellExecutor
-	scriptPath string
-	maxPro     int
-	maxCasual  int
+	executor      *ShellExecutor
+	scriptPath    string
+	maxInstances  int
 }
 
 // NewMatchExecutor creates a MatchExecutor.
-// scriptPath is relative to scriptsDir (e.g., "cs2/match/match.sh").
-func NewMatchExecutor(executor *ShellExecutor, scriptPath string, maxPro, maxCasual int) *MatchExecutor {
+// scriptPath is relative to scriptsDir (e.g., "cs2/cs2.sh").
+func NewMatchExecutor(executor *ShellExecutor, scriptPath string, maxInstances int) *MatchExecutor {
 	return &MatchExecutor{
-		executor:   executor,
-		scriptPath: scriptPath,
-		maxPro:     maxPro,
-		maxCasual:  maxCasual,
+		executor:     executor,
+		scriptPath:   scriptPath,
+		maxInstances: maxInstances,
 	}
 }
 
-// Start spins up the specified number of pro and casual match instances.
-func (m *MatchExecutor) Start(ctx context.Context, proCount, casualCount int) (*Result, error) {
-	if proCount < 0 || proCount > m.maxPro {
-		return nil, fmt.Errorf("pro count must be 0-%d, got %d", m.maxPro, proCount)
-	}
-	if casualCount < 0 || casualCount > m.maxCasual {
-		return nil, fmt.Errorf("casual count must be 0-%d, got %d", m.maxCasual, casualCount)
-	}
-	if proCount == 0 && casualCount == 0 {
-		return nil, fmt.Errorf("at least one of pro or casual count must be > 0")
+// Start spins up the specified number of match instances.
+// Calls: cs2.sh match up --count N
+func (m *MatchExecutor) Start(ctx context.Context, count int) (*Result, error) {
+	if count <= 0 || count > m.maxInstances {
+		return nil, fmt.Errorf("count must be 1-%d, got %d", m.maxInstances, count)
 	}
 
-	env := map[string]string{
-		"PRO_INSTANCE_COUNT":    strconv.Itoa(proCount),
-		"CASUAL_INSTANCE_COUNT": strconv.Itoa(casualCount),
-	}
-
-	return m.executor.Run(ctx, m.scriptPath, "up", env)
+	return m.executor.Run(ctx, m.scriptPath, "match up --count "+strconv.Itoa(count), nil)
 }
 
-// Stop tears down all match instances using max counts to ensure all are caught.
+// Stop tears down all match instances using max count to ensure all are caught.
+// Calls: cs2.sh match down --count N
 func (m *MatchExecutor) Stop(ctx context.Context) (*Result, error) {
-	env := map[string]string{
-		"PRO_INSTANCE_COUNT":    strconv.Itoa(m.maxPro),
-		"CASUAL_INSTANCE_COUNT": strconv.Itoa(m.maxCasual),
-	}
-
-	return m.executor.Run(ctx, m.scriptPath, "down", env)
+	return m.executor.Run(ctx, m.scriptPath, "match down --count "+strconv.Itoa(m.maxInstances), nil)
 }
