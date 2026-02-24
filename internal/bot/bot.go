@@ -169,7 +169,7 @@ func (b *Bot) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	case "restart":
 		b.serverHandler.HandleRestart(s, i, sub)
 	case "status":
-		b.serverHandler.HandleStatus(s, i)
+		b.serverHandler.HandleStatus(s, i, sub)
 	case "match":
 		b.cs2Handler.HandleMatch(s, i, sub)
 	case "rcon":

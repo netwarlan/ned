@@ -57,6 +57,15 @@ func (h *ServerHandler) Subcommands() []*discordgo.ApplicationCommandOption {
 		}
 	}
 
+	statusChoices := make([]*discordgo.ApplicationCommandOptionChoice, 0, len(h.cfg.Servers))
+	for key, srv := range h.cfg.Servers {
+		statusChoices = append(statusChoices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  srv.DisplayName,
+			Value: key,
+		})
+	}
+	sort.Slice(statusChoices, func(i, j int) bool { return statusChoices[i].Name < statusChoices[j].Name })
+
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -79,7 +88,15 @@ func (h *ServerHandler) Subcommands() []*discordgo.ApplicationCommandOption {
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "status",
-			Description: "Show status of all game servers",
+			Description: "Show server status",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "service",
+					Description: "Specific server (default: all)",
+					Choices:     statusChoices,
+				},
+			},
 		},
 	}
 }
@@ -99,8 +116,12 @@ func (h *ServerHandler) HandleRestart(s *discordgo.Session, i *discordgo.Interac
 	h.handleLifecycle(s, i, sub, "restart")
 }
 
-// HandleStatus handles /ned status.
-func (h *ServerHandler) HandleStatus(s *discordgo.Session, i *discordgo.InteractionCreate) {
+// HandleStatus handles /ned status [service].
+func (h *ServerHandler) HandleStatus(s *discordgo.Session, i *discordgo.InteractionCreate, sub *discordgo.ApplicationCommandInteractionDataOption) {
+	if len(sub.Options) > 0 && sub.Options[0].StringValue() != "" {
+		h.handleSingleStatus(s, i, sub.Options[0].StringValue())
+		return
+	}
 	h.handleStatus(s, i)
 }
 
@@ -139,6 +160,81 @@ func (h *ServerHandler) handleLifecycle(s *discordgo.Session, i *discordgo.Inter
 			log.Printf("[%s] %s %s exited with code %d", serviceKey, action, srv.DisplayName, result.ExitCode)
 		}
 	}()
+}
+
+func (h *ServerHandler) handleSingleStatus(s *discordgo.Session, i *discordgo.InteractionCreate, serverKey string) {
+	respondDeferred(s, i, false)
+
+	srv, ok := h.cfg.Servers[serverKey]
+	if !ok {
+		followUpError(s, i, fmt.Sprintf("Unknown server: %s", serverKey), nil)
+		return
+	}
+
+	name := srv.DisplayName
+	embed := &discordgo.MessageEmbed{
+		Title:     name,
+		Color:     0x00bfff,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Fields:    []*discordgo.MessageEmbedField{},
+	}
+
+	// Connection info from config
+	if srv.Port > 0 {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: "Address", Value: fmt.Sprintf("`%s:%d`", srv.IP, srv.Port), Inline: true,
+		})
+	}
+
+	// If queryable, get live data
+	if srv.Protocol == "source" && srv.QueryPort > 0 {
+		addr := fmt.Sprintf("%s:%d", srv.IP, srv.QueryPort)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		status, err := h.querier.QueryStatus(ctx, addr)
+		if err != nil || status == nil || !status.Online {
+			embed.Color = 0xff0000
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name: "Status", Value: "Offline", Inline: true,
+			})
+			followUpEmbed(s, i, []*discordgo.MessageEmbed{embed})
+			return
+		}
+
+		embed.Color = 0x00ff00
+		embed.Fields = append(embed.Fields,
+			&discordgo.MessageEmbedField{Name: "Status", Value: "Online", Inline: true},
+			&discordgo.MessageEmbedField{Name: "Map", Value: fmt.Sprintf("`%s`", status.Map), Inline: true},
+			&discordgo.MessageEmbedField{Name: "Players", Value: fmt.Sprintf("%d / %d", status.Players, status.MaxPlayers), Inline: true},
+			&discordgo.MessageEmbedField{Name: "Latency", Value: fmt.Sprintf("%dms", status.Latency.Milliseconds()), Inline: true},
+		)
+		if status.Bots > 0 {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name: "Bots", Value: fmt.Sprintf("%d", status.Bots), Inline: true,
+			})
+		}
+
+		// Player list
+		players, _ := h.querier.QueryPlayers(ctx, addr)
+		if len(players) > 0 {
+			var lines []string
+			for _, p := range players {
+				dur := p.Duration.Truncate(time.Second)
+				lines = append(lines, fmt.Sprintf("`%-20s` | Score: %d | %s", p.Name, p.Score, dur))
+			}
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name:  "Connected Players",
+				Value: truncate(strings.Join(lines, "\n"), 1024),
+			})
+		}
+	} else {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: "Status", Value: "Not queryable", Inline: true,
+		})
+	}
+
+	followUpEmbed(s, i, []*discordgo.MessageEmbed{embed})
 }
 
 func (h *ServerHandler) handleStatus(s *discordgo.Session, i *discordgo.InteractionCreate) {
