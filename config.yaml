@@ -2,7 +2,7 @@ discord:
   token: "${DISCORD_TOKEN}"
   guild_id: "1443470995712114720"
 
-scripts_dir: "/scripts" # mount point for game-deployment-scripts
+scripts_dir: "/home/docker/netwar46.0"
 environment: "event"    # "event" (MAC VLAN) or "local" (port mapping)
 
 servers:
