@@ -110,6 +110,11 @@ func (b *Bot) buildCommand() *discordgo.ApplicationCommand {
 			b.welcomeHandler.TournamentSubcommand(),
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "help",
+				Description: "Show available commands",
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "ping",
 				Description: "Check if the bot is alive",
 			},
@@ -170,6 +175,28 @@ func (b *Bot) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 		b.welcomeHandler.HandleWelcome(s, i)
 	case "tournament":
 		b.welcomeHandler.HandleTournament(s, i, sub)
+	case "help":
+		help := "**Ned — NETWAR Event Discord Bot**\n" +
+			"```\n" +
+			"/ned server start <service>     Start a game server\n" +
+			"/ned server stop <service>      Stop a game server\n" +
+			"/ned server restart <service>   Restart a game server\n" +
+			"/ned server status              Show all server statuses\n" +
+			"/ned match start [pro] [casual] Spin up CS2 match instances\n" +
+			"/ned match stop                 Tear down all match instances\n" +
+			"/ned map <map> [server]         Change CS2 map via RCON\n" +
+			"/ned rcon <server> <command>    Send RCON command\n" +
+			"/ned players [server]           Show player counts\n" +
+			"/ned welcome                    Post event welcome message\n" +
+			"/ned tournament [matches]       Post CS2 tournament info\n" +
+			"/ned help                       Show this message\n" +
+			"/ned ping                       Pong\n" +
+			"/ned version                    Show bot version\n" +
+			"```"
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: help, Flags: discordgo.MessageFlagsEphemeral},
+		})
 	case "ping":
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
