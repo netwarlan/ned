@@ -25,8 +25,15 @@ RUN apt-get update && \
     bash \
     ca-certificates \
     curl \
-    docker.io \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Docker CLI and compose plugin from Docker's official repo
+RUN install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian trixie stable" > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /ned /usr/local/bin/ned
 
