@@ -36,7 +36,7 @@ func New(cfg *config.Config, version string) (*Bot, error) {
 		return nil, err
 	}
 
-	exec := executor.NewShellExecutor(cfg.ScriptsDir, cfg.Environment)
+	exec := executor.NewShellExecutor(cfg.ResolvedScriptsDir, cfg.Environment)
 	matchExec := executor.NewMatchExecutor(
 		exec,
 		cfg.CS2Matches.Script,

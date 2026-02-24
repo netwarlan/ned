@@ -11,12 +11,35 @@ import (
 )
 
 type Config struct {
-	Discord     DiscordConfig        `yaml:"discord"`
-	ScriptsDir  string               `yaml:"scripts_dir"`
-	Environment string               `yaml:"environment"`
-	Servers     map[string]Server    `yaml:"servers"`
-	CS2Matches  CS2MatchConfig       `yaml:"cs2_matches"`
-	Welcome     WelcomeConfig        `yaml:"welcome"`
+	Discord     DiscordConfig         `yaml:"discord"`
+	ScriptsDir  EnvValue              `yaml:"scripts_dir"`
+	Environment string                `yaml:"environment"`
+	Servers     map[string]Server     `yaml:"servers"`
+	CS2Matches  CS2MatchConfig        `yaml:"cs2_matches"`
+	Welcome     WelcomeConfig         `yaml:"welcome"`
+
+	// Resolved at load time from Environment
+	ResolvedScriptsDir string `yaml:"-"`
+}
+
+// EnvValue holds per-environment values. Can be specified as a simple string
+// (used for both environments) or as event/local sub-keys.
+type EnvValue struct {
+	Event string `yaml:"event"`
+	Local string `yaml:"local"`
+}
+
+func (e *EnvValue) UnmarshalYAML(value *yaml.Node) error {
+	// Try as a simple string first
+	var s string
+	if value.Decode(&s) == nil {
+		e.Event = s
+		e.Local = s
+		return nil
+	}
+	// Otherwise decode as struct with event/local keys
+	type raw EnvValue
+	return value.Decode((*raw)(e))
 }
 
 // WelcomeConfig defines the preformatted welcome message structure.
@@ -51,13 +74,27 @@ type DiscordConfig struct {
 type Server struct {
 	DisplayName  string `yaml:"display_name"`
 	Script       string `yaml:"script"`
-	IP           string `yaml:"ip"`
-	Port         int    `yaml:"port"`
-	QueryPort    int    `yaml:"query_port"`
 	Protocol     string `yaml:"protocol"`
-	RCONPort     int    `yaml:"rcon_port"`
 	RCONPassword string `yaml:"rcon_password"`
 	Category     string `yaml:"category"`
+
+	// Environment-specific connection details
+	Event ServerEnv `yaml:"event"`
+	Local ServerEnv `yaml:"local"`
+
+	// Resolved at load time from the active environment
+	IP        string `yaml:"-"`
+	Port      int    `yaml:"-"`
+	QueryPort int    `yaml:"-"`
+	RCONPort  int    `yaml:"-"`
+}
+
+// ServerEnv holds the environment-specific connection fields for a server.
+type ServerEnv struct {
+	IP        string `yaml:"ip"`
+	Port      int    `yaml:"port"`
+	QueryPort int    `yaml:"query_port"`
+	RCONPort  int    `yaml:"rcon_port"`
 }
 
 type CS2MatchConfig struct {
@@ -91,6 +128,8 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("parsing config: %w", err)
 	}
 
+	cfg.resolveEnvironment()
+
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("validating config: %w", err)
 	}
@@ -105,8 +144,8 @@ func (c *Config) Validate() error {
 	if c.Discord.GuildID == "" {
 		return fmt.Errorf("discord.guild_id is required")
 	}
-	if c.ScriptsDir == "" {
-		return fmt.Errorf("scripts_dir is required")
+	if c.ResolvedScriptsDir == "" {
+		return fmt.Errorf("scripts_dir is required (for environment %q)", c.Environment)
 	}
 	if c.Environment != "event" && c.Environment != "local" {
 		return fmt.Errorf("environment must be \"event\" or \"local\", got %q", c.Environment)
@@ -123,6 +162,32 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("cs2_matches.script is required")
 	}
 	return nil
+}
+
+// resolveEnvironment populates resolved fields (IP, Port, etc.) from
+// the active environment's config block (event or local).
+func (c *Config) resolveEnvironment() {
+	switch c.Environment {
+	case "local":
+		c.ResolvedScriptsDir = c.ScriptsDir.Local
+	default:
+		c.ResolvedScriptsDir = c.ScriptsDir.Event
+	}
+
+	for key, srv := range c.Servers {
+		var env ServerEnv
+		switch c.Environment {
+		case "local":
+			env = srv.Local
+		default:
+			env = srv.Event
+		}
+		srv.IP = env.IP
+		srv.Port = env.Port
+		srv.QueryPort = env.QueryPort
+		srv.RCONPort = env.RCONPort
+		c.Servers[key] = srv
+	}
 }
 
 // QueryableServers returns servers with protocol "source" that support A2S queries.

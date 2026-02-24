@@ -2,173 +2,254 @@ discord:
   token: "${DISCORD_TOKEN}"
   guild_id: "1443470995712114720"
 
-scripts_dir: "/home/docker/netwar46.0"
+scripts_dir:
+  event: "/home/docker/netwar46.0"
+  local: "/docker/game-deployment-scripts"
+
 environment: "event"    # "event" (MAC VLAN) or "local" (port mapping)
 
 servers:
   tf2:
     display_name: "TF2 Casual"
     script: "tf2/tf2.sh"
-    ip: "10.10.10.122"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: ""
     category: "game"
+    event:
+      ip: "10.10.10.122"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
 
   l4d2:
     display_name: "Left 4 Dead 2"
     script: "l4d2/l4d2.sh"
-    ip: "10.10.10.126"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: ""
     category: "game"
+    event:
+      ip: "10.10.10.126"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27016
+      query_port: 27016
+      rcon_port: 27016
 
   garrysmod:
     display_name: "Garry's Mod"
     script: "garrysmod/garrysmod.sh"
-    ip: "10.10.10.121"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: ""
     category: "game"
+    event:
+      ip: "10.10.10.121"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27017
+      query_port: 27017
+      rcon_port: 27017
 
   cstrike:
     display_name: "CS 1.6 SnowSk337"
     script: "cstrike/cstrike.sh"
-    ip: "10.10.10.120"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: ""
     category: "game"
+    event:
+      ip: "10.10.10.120"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27018
+      query_port: 27018
+      rcon_port: 27018
 
   rust:
     display_name: "Rust"
     script: "rust/rust.sh"
-    ip: "10.10.10.127"
-    port: 28015
-    query_port: 28015
     protocol: "source"
-    rcon_port: 28016
     rcon_password: "iloverust"
     category: "game"
+    event:
+      ip: "10.10.10.127"
+      port: 28015
+      query_port: 28015
+      rcon_port: 28016
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 28015
+      query_port: 28015
+      rcon_port: 28016
 
   satisfactory:
     display_name: "Satisfactory"
     script: "satisfactory/satisfactory.sh"
-    ip: "10.10.10.124"
-    port: 7777
-    query_port: 0
     protocol: "none"
     category: "game"
+    event:
+      ip: "10.10.10.124"
+      port: 7777
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 7777
 
   minecraft:
     display_name: "Minecraft"
     script: "minecraft/minecraft.sh"
-    ip: "10.10.10.130"
-    port: 25565
-    query_port: 0
     protocol: "none"
     category: "game"
+    event:
+      ip: "10.10.10.130"
+      port: 25565
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 25565
 
   ut2004:
     display_name: "UT2004"
     script: "ut2004/ut2004.sh"
-    ip: "10.10.10.125"
-    port: 7777
-    query_port: 0
     protocol: "none"
     category: "game"
+    event:
+      ip: "10.10.10.125"
+      port: 7777
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 7778
 
   palworld:
     display_name: "Palworld"
     script: "palworld/palworld.sh"
-    ip: "10.10.10.123"
-    port: 8211
-    query_port: 0
     protocol: "none"
     category: "game"
+    event:
+      ip: "10.10.10.123"
+      port: 8211
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 8211
 
   tf2-mvm:
     display_name: "TF2 MvM"
     script: "tf2/tf2.sh"
-    ip: "10.10.10.123"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: ""
     category: "game"
+    event:
+      ip: "10.10.10.123"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27019
+      query_port: 27019
+      rcon_port: 27019
 
   cs2-casual:
     display_name: "CS2 Casual"
     script: "cs2/casual/cs2.sh"
-    ip: "10.10.10.131"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: "headshot"
     category: "cs2"
+    event:
+      ip: "10.10.10.131"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27020
+      query_port: 27020
+      rcon_port: 27020
 
   cs2-armsrace:
     display_name: "CS2 Arms Race"
     script: "cs2/casual/cs2.sh"
-    ip: "10.10.10.132"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: "headshot"
     category: "cs2"
+    event:
+      ip: "10.10.10.132"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27021
+      query_port: 27021
+      rcon_port: 27021
 
   cs2-scrim-1:
     display_name: "CS2 Scrim 1"
     script: "cs2/scrim/cs2.sh"
-    ip: "10.10.10.133"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: "headshot"
     category: "cs2"
+    event:
+      ip: "10.10.10.133"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27022
+      query_port: 27022
+      rcon_port: 27022
 
   cs2-scrim-2:
     display_name: "CS2 Scrim 2"
     script: "cs2/scrim/cs2.sh"
-    ip: "10.10.10.134"
-    port: 27015
-    query_port: 27015
     protocol: "source"
-    rcon_port: 27015
     rcon_password: "headshot"
     category: "cs2"
+    event:
+      ip: "10.10.10.134"
+      port: 27015
+      query_port: 27015
+      rcon_port: 27015
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 27023
+      query_port: 27023
+      rcon_port: 27023
 
   connect:
     display_name: "Connect Proxy"
     script: "connect/connect.sh"
-    ip: "10.10.10.129"
-    port: 80
-    query_port: 0
     protocol: "none"
     category: "infra"
+    event:
+      ip: "10.10.10.129"
+      port: 80
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 8080
 
   monitoring:
     display_name: "Monitoring"
     script: "monitoring/monitoring.sh"
-    ip: "10.10.10.128"
-    port: 0
-    query_port: 0
     protocol: "none"
     category: "infra"
+    event:
+      ip: "10.10.10.128"
+      port: 0
+    local:
+      ip: "gameservers.tuxy.io"
+      port: 0
 
 cs2_matches:
   script: "cs2/cs2.sh"
