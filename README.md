@@ -7,18 +7,20 @@ Ned wraps the existing [game-deployment-scripts](https://github.com/netwarlan/ga
 ## Commands
 
 ```
-/ned server start <service>     — start a game server
-/ned server stop <service>      — stop a game server
-/ned server restart <service>   — restart a game server
-/ned server status              — show all server statuses (A2S query)
-/ned match start [pro] [casual] — spin up CS2 match instances
+/ned start <service>            — start a game server
+/ned stop <service>             — stop a game server
+/ned restart <service>          — restart a game server
+/ned status                     — show all server statuses
+/ned match start <count>        — spin up CS2 match instances
 /ned match stop                 — tear down all match instances
-/ned map <map_name> [server]    — change CS2 map via RCON
-/ned rcon <server> <command>    — send RCON command (ephemeral response)
-/ned players [server]           — show player counts and connected players
-/ned welcome                    — post event welcome message with server connection info
-/ned tournament [matches]       — post CS2 tournament match connection info
+/ned match map <map> [server]   — change CS2 map via RCON
+/ned rcon <server> <command>    — send RCON command
+/ned players [server]           — show player counts
+/ned welcome                    — post event welcome message
+/ned tournament [matches]       — post CS2 tournament info
+/ned help                       — show available commands
 /ned ping                       — pong
+/ned version                    — show bot version
 ```
 
 ## Setup
@@ -53,34 +55,30 @@ make build
 export $(grep -v '^#' .env | xargs) && ./ned --config config.yaml
 ```
 
-### Docker Deployment
+### Deploy to Server
+
+Ned runs as a native binary managed by systemd. From `game-deployment-scripts/ned/`:
 
 ```bash
-# Event deployment (MAC VLAN)
-docker compose -f compose.yaml -f compose.event.yaml up -d
+# Download the latest release
+./ned.sh update
 
-# Local deployment
-docker compose -f compose.yaml -f compose.local.yaml up -d
+# Install the systemd service (one-time)
+./ned.sh install
+
+# Start
+./ned.sh up
 ```
 
-The container needs:
-- `/var/run/docker.sock` mounted — the bot executes `docker compose` via the host daemon
-- `game-deployment-scripts` directory mounted at `/scripts`
-- `config.yaml` mounted at `/config/config.yaml`
-- `DISCORD_TOKEN` set via environment or `.env` file
-
-### CS2 Match Script Change
-
-For `/ned match start` to control instance counts, [match.sh](https://github.com/netwarlan/game-deployment-scripts) needs a two-line change:
+Management commands:
 
 ```bash
-# Before:
-PRO_INSTANCE_COUNT=1
-CASUAL_INSTANCE_COUNT=1
-
-# After:
-PRO_INSTANCE_COUNT="${PRO_INSTANCE_COUNT:-1}"
-CASUAL_INSTANCE_COUNT="${CASUAL_INSTANCE_COUNT:-1}"
+./ned.sh up        # start the bot
+./ned.sh down      # stop the bot
+./ned.sh restart   # restart the bot
+./ned.sh update    # download latest release and restart
+./ned.sh status    # show service status
+./ned.sh logs      # view logs
 ```
 
 ## Development
@@ -89,10 +87,9 @@ CASUAL_INSTANCE_COUNT="${CASUAL_INSTANCE_COUNT:-1}"
 make build    # build binary (embeds git version/commit/date)
 make test     # run tests with race detection
 make lint     # run golangci-lint
-make docker   # build Docker image
 make clean    # remove binary
 ```
 
 ## CI/CD
 
-Pushes to `main` build and publish `ghcr.io/netwarlan/ned:latest` via the shared [action-container-build](https://github.com/netwarlan/action-container-build) workflow.
+Tagging a version (e.g., `git tag v1.0.0 && git push --tags`) triggers a GitHub Actions workflow that builds a Linux binary and publishes it as a GitHub Release.

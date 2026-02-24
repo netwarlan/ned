@@ -1,9 +1,0 @@
-services:
-  ned:
-    networks:
-      vlan:
-        ipv4_address: 10.10.10.162
-
-networks:
-  vlan:
-    external: true

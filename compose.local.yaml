@@ -1,4 +1,0 @@
-services:
-  ned:
-    environment:
-      NETWAR_ENV: "local"
