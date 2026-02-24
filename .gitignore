@@ -1,0 +1,6 @@
+ned
+.env
+.DS_Store
+data/
+docs/
+*.exe

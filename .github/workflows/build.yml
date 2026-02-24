@@ -1,0 +1,9 @@
+name: Build
+on:
+  push:
+  workflow_dispatch: {}
+jobs:
+  deploy:
+    uses: netwarlan/action-container-build/.github/workflows/build-publish.yaml@main
+    with:
+      image-name: ned
