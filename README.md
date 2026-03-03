@@ -1,5 +1,9 @@
 # Ned
 
+[![Build](https://img.shields.io/github/actions/workflow/status/netwarlan/ned/build.yml)](https://github.com/netwarlan/ned/actions)
+[![Release](https://img.shields.io/github/v/release/netwarlan/ned)](https://github.com/netwarlan/ned/releases)
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/QtqKW9xvzK)
+
 NETWAR Event Discord bot — manage game servers from Discord instead of SSH.
 
 Ned wraps the existing [game-deployment-scripts](https://github.com/netwarlan/game-deployment-scripts) shell scripts and adds native RCON and A2S server querying, all behind a single `/ned` slash command.
