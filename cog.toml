@@ -1,0 +1,13 @@
+from_latest_tag = true
+tag_prefix = "v"
+ignore_merge_commits = true
+disable_bump_commit = true
+
+[commit_types]
+docs = { changelog_title = "Documentation", bump_patch = true }
+chore = { changelog_title = "Miscellaneous Chores", bump_patch = true }
+style = { changelog_title = "Style", bump_patch = true }
+refactor = { changelog_title = "Refactoring", bump_patch = true }
+test = { changelog_title = "Tests", bump_patch = true }
+build = { changelog_title = "Build", bump_patch = true }
+ci = { changelog_title = "CI", bump_patch = true }

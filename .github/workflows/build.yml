@@ -3,48 +3,71 @@ name: Build
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
   workflow_dispatch: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  version:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: cocogitto/cocogitto-action@v3
+        id: cocogitto
+        with:
+          release: true
+          check: true
+          check-latest-tag-only: true
+      - name: Set version output
+        id: version
+        run: echo "version=${{ steps.cocogitto.outputs.version }}" >> "$GITHUB_OUTPUT"
+
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
       - run: go test -race ./...
 
   release:
-    needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [version, test]
+    if: needs.version.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
       - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
-
       - name: Build binary
         run: |
-          VERSION="${GITHUB_REF_NAME}"
+          VERSION="${{ needs.version.outputs.version }}"
           COMMIT="$(git rev-parse --short HEAD)"
           DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
             -ldflags="-w -s -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
             -o ned-linux-amd64 ./cmd/ned
-
       - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
+          git tag "${{ needs.version.outputs.version }}"
+          git push origin "${{ needs.version.outputs.version }}"
+          gh release create "${{ needs.version.outputs.version }}" \
             ned-linux-amd64#"ned (Linux x86-64)" \
             --generate-notes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
