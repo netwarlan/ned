@@ -8,8 +8,8 @@ github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0U
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/rumblefrog/go-a2s v1.0.2 h1:rT/QP/B+h2R9/3PEfmOkWPdHnEKExskOMPTTkeX+vuA=
-github.com/rumblefrog/go-a2s v1.0.2/go.mod h1:6nq//LMUMa3ElowQ7eH8atnDbQG+nVMFsaMFzSo8p/M=
+github.com/rumblefrog/go-a2s v1.0.3 h1:Y1r8oX5IOL8b3KHhN9RCY+2bdmpio52Acd1KsYg4efI=
+github.com/rumblefrog/go-a2s v1.0.3/go.mod h1:6nq//LMUMa3ElowQ7eH8atnDbQG+nVMFsaMFzSo8p/M=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
